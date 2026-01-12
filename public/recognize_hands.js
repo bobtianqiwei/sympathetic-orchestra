@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
       video.addEventListener("loadedmetadata", () => {
         const videoWidth = video.videoWidth;
         const videoHeight = video.videoHeight;
-        const targetWidth = 250;
+        const targetWidth = 200;
         const aspectRatio = videoHeight / videoWidth;
         const targetHeight = Math.round(targetWidth * aspectRatio);
         

@@ -634,7 +634,7 @@ function draw() {
 
       break;
     case "Open_Palm":
-      fill("yellow");
+      fill(255, 165, 0); // Orange color
       rect(leftHandCursorX - 25, leftHandCursorY - 12.5, 45, 15);
       break;
     case "Closed_Fist":
@@ -656,7 +656,7 @@ function draw() {
         rightHandCursorX + 1, rightHandCursorY + 35);
       break;
     case "Open_Palm":
-      fill("yellow");
+      fill(255, 165, 0); // Orange color
       rect(rightHandCursorX - 25, rightHandCursorY - 12.5, 45, 15);
       break;
     case "Closed_Fist":
