@@ -36,7 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoWidth = "900px";
 
   const video = document.getElementById("webcam");
-  const enableWebcamButton = document.getElementById("webcamButton");
+  const enableCameraButton = document.getElementById("enableCameraButton");
+  const cameraPreviewButton = document.getElementById("cameraPreviewButton");
+  const videoContainer = document.getElementById("videoContainer");
+  let cameraPreviewVisible = false;
 
   // Initialize the gesture recognizer
   const createGestureRecognizer = async () => {
@@ -52,6 +55,11 @@ document.addEventListener("DOMContentLoaded", () => {
       numHands: 2,
       runningMode: "VIDEO"
     });
+    // Enable button when models are loaded
+    if (gestureRecognizer && handLandmarker) {
+      enableCameraButton.innerText = "Enable Camera";
+      enableCameraButton.disabled = false;
+    }
   };
   createGestureRecognizer();
 
@@ -68,8 +76,25 @@ document.addEventListener("DOMContentLoaded", () => {
       runningMode: "VIDEO",
       numHands: 2,
     });
+    // Enable button when models are loaded
+    if (gestureRecognizer && handLandmarker) {
+      enableCameraButton.innerText = "Enable Camera";
+      enableCameraButton.disabled = false;
+    }
   };
   createHandLandmarker();
+  
+  // Camera Preview toggle functionality
+  cameraPreviewButton.addEventListener("click", () => {
+    cameraPreviewVisible = !cameraPreviewVisible;
+    if (cameraPreviewVisible) {
+      videoContainer.classList.add("visible");
+      cameraPreviewButton.innerText = "Hide Preview";
+    } else {
+      videoContainer.classList.remove("visible");
+      cameraPreviewButton.innerText = "Camera Preview";
+    }
+  });
 
   // Webcam functionality
   const hasGetUserMedia = () =>
@@ -77,20 +102,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const enableCam = async () => {
     if (!gestureRecognizer || !handLandmarker) {
-      alert("Please wait for models to load");
+      console.log("Models are still loading, please wait...");
+      enableCameraButton.innerText = "Loading Models...";
+      enableCameraButton.disabled = true;
       return;
     }
 
     if (webcamRunning) {
       webcamRunning = false;
-      enableWebcamButton.innerText = "ENABLE PREDICTIONS";
+      enableCameraButton.innerText = "Enable Camera";
       const stream = video.srcObject;
       const tracks = stream.getTracks();
       tracks.forEach((track) => track.stop());
       video.srcObject = null;
     } else {
       webcamRunning = true;
-      enableWebcamButton.innerText = "DISABLE PREDICTIONS";
+      enableCameraButton.innerText = "Disable Camera";
 
       const constraints = {
         video: true,
@@ -98,11 +125,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
+      
+      // Adjust video size based on actual camera dimensions
+      video.addEventListener("loadedmetadata", () => {
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+        const targetWidth = 250;
+        const aspectRatio = videoHeight / videoWidth;
+        const targetHeight = Math.round(targetWidth * aspectRatio);
+        
+        video.style.width = targetWidth + 'px';
+        video.style.height = targetHeight + 'px';
+      });
+      
       video.addEventListener("loadeddata", predictWebcam);
     }
   };
 
-  enableWebcamButton.addEventListener("click", enableCam);
+  enableCameraButton.addEventListener("click", enableCam);
 
   let lastVideoTime = -1;
   let results = undefined;
@@ -141,7 +181,8 @@ document.addEventListener("DOMContentLoaded", () => {
             gesture[0].score * 100
           ).toFixed(2);
           const handedness = results.handednesses[index][0].displayName;
-          //console.log(handedness);
+          
+          // Gesture output element removed - no longer displaying gesture info on screen
 
           if (handedness == "Right") {
             window.sharedData.leftGestureData.gestureName = categoryName;

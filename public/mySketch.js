@@ -4,6 +4,9 @@
 
 // This is the main file for the Sympathetic Orchestra project.
 
+// Debug flag: set to false in production to disable console logs
+const DEBUG = false;
+
 let sound;
 let amp;
 
@@ -46,9 +49,34 @@ function soundLoaded() {
       loadedCount++;
     }
   }
+  
+  // Update loading progress
+  const progress = (loadedCount / texts.length) * 100;
+  updateLoadingProgress(progress);
+  
   if (loadedCount === texts.length) {
     allLoaded = true;
-    console.log("All sounds loaded successfully");
+    if (DEBUG) console.log("All sounds loaded successfully");
+    // Hide loading screen after a short delay
+    setTimeout(() => {
+      hideLoadingScreen();
+    }, 300);
+  }
+}
+
+// Update loading progress bar
+function updateLoadingProgress(percent) {
+  const progressBar = document.getElementById('loadingProgressBar');
+  if (progressBar) {
+    progressBar.style.width = percent + '%';
+  }
+}
+
+// Hide loading screen
+function hideLoadingScreen() {
+  const loadingScreen = document.getElementById('loadingScreen');
+  if (loadingScreen) {
+    loadingScreen.style.display = 'none';
   }
 }
 
@@ -56,7 +84,7 @@ function soundLoaded() {
 const n_parts = 18;
 const n_grid_X = 16, n_grid_Y = 7;
 const sizeX = 1565, sizeY = 1000;
-const globalX = 50, globalY = 50; // The margin size. 
+let globalX = 50, globalY = 50; // Will be calculated to center the grid 
 
 /* Defining the objects and arrays according to the basic parameters above. 
    No need to modify! */
@@ -65,15 +93,24 @@ let ampPtr = [];
 let unitAttributes = Array.from({ length: n_parts }, () => Array(4).fill(0));
 let textAttributes = Array.from({ length: n_parts }, () => Array(2).fill(0));
 let colors = Array.from({ length: n_parts }, () => Array(3).fill(0));
+let selectedUnits = Array(n_parts).fill(false); // Track which units are selected
 let ampvalue = Array(n_parts).fill(0); // The actual values of the output of the soundtracks. 
 let ampVals = Array(n_parts).fill(0); // The input values to correct the volume of the soundtracks. 
 let ampValCoef = 1;
 
-const unitX = (sizeX - globalX * 2) / n_grid_X;
-const unitY = (sizeY - globalY * 2) / n_grid_Y;
-const rectRad = 40;
-const dX = unitX / 4;
-const dY = unitY / 4; // The distance between grids when drawing the rectangles. 
+// Grid unit size: 70px × 70px (50px small square + 20px gap)
+const unitX = 70;
+const unitY = 70;
+// Small square size: 50px × 50px
+const smallSquareSize = 50;
+// Small square corner radius: 25px (maximum, makes it circular)
+const smallRectRad = 25;
+// Big square margin from small squares: 5px
+const bigSquareMargin = 5;
+// Big square corner radius: 30px (25 + 5)
+const bigRectRad = 30;
+// Small square offset to center in grid: (70 - 50) / 2 = 10px
+const smallSquareOffset = (unitX - smallSquareSize) / 2; 
 
 let playTime = 0;
 let lastTime;
@@ -163,12 +200,15 @@ const muted = [false,
 function deriveAttributes() { //draws the orchestra gui
   // Called only in preprocessing. 
   for (let i = units.length - 1; i > -1; --i) {
-    unitAttributes[i][0] = globalX + units[i][1] * unitX;
-    unitAttributes[i][1] = globalY + units[i][0] * unitY;
-    unitAttributes[i][2] = units[i][3] * unitX - dX;
-    unitAttributes[i][3] = units[i][2] * unitY - dY;
-    textAttributes[i][0] = globalX + (units[i][1] * 2 + units[i][3]) * unitX / 2 - 8 * texts[i].length;
-    textAttributes[i][1] = globalY + (units[i][0] * 2 + units[i][2]) * unitY / 2 - 10;
+    // Big square position: grid position + small square offset - margin
+    unitAttributes[i][0] = globalX + units[i][1] * unitX + smallSquareOffset - bigSquareMargin;
+    unitAttributes[i][1] = globalY + units[i][0] * unitY + smallSquareOffset - bigSquareMargin;
+    // Big square size: grid size - 2 * margin
+    unitAttributes[i][2] = units[i][3] * unitX - 2 * bigSquareMargin;
+    unitAttributes[i][3] = units[i][2] * unitY - 2 * bigSquareMargin;
+    // Text position: center of big square (will be used with textAlign)
+    textAttributes[i][0] = unitAttributes[i][0] + unitAttributes[i][2] / 2;
+    textAttributes[i][1] = unitAttributes[i][1] + unitAttributes[i][3] / 2;
     colors[i][0] = (units[i][4] < 128) ? 255 : 0;
     colors[i][1] = colors[i][0];
     colors[i][2] = colors[i][0];
@@ -195,23 +235,30 @@ function drawParts() {
     // Big Units. 
     if (units[i][4] === -1) fill(150, 200, 175);
     else if (gestureFlags[i] === 0) fill(255, 90, 90);
+    else if (selectedUnits[i]) fill(169, 213, 175); // Green for selected (#a9d5af)
     else fill(units[i][4], units[i][4], units[i][4]);
-    rect(unitAttributes[i][0], unitAttributes[i][1], unitAttributes[i][2], unitAttributes[i][3], rectRad);
+    rect(unitAttributes[i][0], unitAttributes[i][1], unitAttributes[i][2], unitAttributes[i][3], bigRectRad);
     
     // Small units. 
     if (i !== 17) {
       fill(colors[i][0], colors[i][1], colors[i][2]);
       for (let j = units[i][2] - 1; j > -1; --j) {
         for (let k = units[i][3] - 1; k > -1; --k) {
-          rect(unitAttributes[i][0] + k * unitX + dX / 2, unitAttributes[i][1] + j * unitY + dY / 2, unitX - 2 * dX, unitY - 2 * dY, rectRad);
+          // Small square position: grid position + offset to center
+          let smallX = globalX + (units[i][1] + k) * unitX + smallSquareOffset;
+          let smallY = globalY + (units[i][0] + j) * unitY + smallSquareOffset;
+          rect(smallX, smallY, smallSquareSize, smallSquareSize, smallRectRad);
         }
       }
     }
     
-    // Text for the GUI (in the rounded rectangles)
+    // Text for the GUI (centered in the rounded rectangles)
     let c = (units[i][4] < 128) ? 255 : 0;
     fill(c, c, c);
-    textSize(20);
+    textAlign(CENTER, CENTER);
+    textSize(15);
+    textFont('Manrope');
+    textStyle(NORMAL);
     text(texts[i], textAttributes[i][0], textAttributes[i][1]);
   }
 };
@@ -260,27 +307,24 @@ function _updateAmpVal() {
 }
 
 function hideMasterVolumeSlider() {
-  masterVolumeSlider.style('display', 'none');
+  // Handled by card visibility
 }
 
 function showMasterVolumeSlider() {
-  masterVolumeSlider.style('display', 'block');
+  // Handled by card visibility
 }
 
 function hideInstrumentSliders() {
-  for (let instrument in sliders) {
-      sliders[instrument].style('display', 'none');
-      labels[instrument].style('display', 'none');
-      labels["master"].style('display', 'none');
+  const slidersCard = document.getElementById('slidersCard');
+  if (slidersCard) {
+    slidersCard.classList.remove('visible');
   }
 }
 
 function showInstrumentSliders() {
-  for (let instrument in sliders) {
-      sliders[instrument].style('display', 'block');
-      labels[instrument].style('display', 'block');
-      labels["master"].style('display', 'block');
-
+  const slidersCard = document.getElementById('slidersCard');
+  if (slidersCard) {
+    slidersCard.classList.add('visible');
   }
 }
 
@@ -324,12 +368,18 @@ function deriveLookupTable() {
 
 /* Main Functions. */
 function setup() {
+  // Hide p5.js default loading screen if it exists
+  const p5Loading = document.getElementById('p5_loading');
+  if (p5Loading) {
+    p5Loading.style.display = 'none';
+  }
+  
   for (let i = n_parts - 1; i > -1; --i) gestureFlags[i] = 1;
   /* Initialize the Sound objects. */
-  console.log("Load soundtracks.");
+  if (DEBUG) console.log("Load soundtracks.");
 //loop through each of the instruments (?)
   for (let i = texts.length - 1; i > -1; --i) {
-    console.log(i);
+    if (DEBUG) console.log(i);
     let instrument = texts[i];
     ampPtr[instrument] = new p5.Amplitude();
     ampPtr[instrument].setInput(sounds[instrument]);
@@ -337,6 +387,13 @@ function setup() {
 
   /* Initialize the GUI. */
   createCanvas(windowWidth, windowHeight);
+  
+  // Calculate grid total size and center it in the window
+  const gridWidth = n_grid_X * unitX;
+  const gridHeight = n_grid_Y * unitY;
+  globalX = (windowWidth - gridWidth) / 2;
+  globalY = (windowHeight - gridHeight) / 2;
+  
   deriveAttributes();
   deriveLookupTable();
 
@@ -356,57 +413,63 @@ function setup() {
   
 
   
-  //masterLabel.position(10, 35);
+  // Create sliders in HTML container
+  const slidersContent = document.getElementById('slidersContent');
+  
+  if (slidersContent) {
+    // Create master slider container
+    const masterItem = document.createElement('div');
+    masterItem.className = 'slider-item';
+    const masterContainer = document.createElement('div');
+    masterContainer.className = 'slider-container';
+    const masterLabel = document.createElement('div');
+    masterLabel.className = 'slider-label';
+    masterLabel.textContent = 'Master Volume';
+    masterContainer.appendChild(masterLabel);
+    
+    // Create master slider with p5.js
+    masterVolumeSlider = createSlider(0, 1, 0.5, 0.01);
+    masterVolumeSlider.elt.style.flex = '1';
+    masterVolumeSlider.input(setMasterVolume);
+    masterContainer.appendChild(masterVolumeSlider.elt);
+    masterItem.appendChild(masterContainer);
+    slidersContent.appendChild(masterItem);
+    labels["master"] = masterLabel;
 
-  let yOffset = 90; // Starting position for individual sliders
-
-  //make master slider
-  let masterLabel = createDiv("<h3 style='font-family: Open Sans'>Master Volume</h3>");
-  masterLabel.position(40, yOffset-50);
-  masterVolumeSlider = createSlider(0, 1, 0.5, 0.01); // Min, Max, Initial value, Step
-  masterVolumeSlider.position(200, yOffset-27);
-  masterVolumeSlider.input(setMasterVolume);
-  labels["master"] = masterLabel
-
-  //creates each instrument slider and text next to it
-  for (let i = 0; i < texts.length; i++) {
+    // Create instrument sliders
+    for (let i = 0; i < texts.length; i++) {
       let instrument = texts[i];
-      // creates the list of instruments
-      let label = createDiv("<h3 style='font-family: Open Sans'>"+instrument+"</h3>");
-      label.position(40, yOffset-20);
-      labels[instrument] = label;
+      const defaultVolume = (instrument === "Piano") ? 0.7 : 0.5;
       
-      // Set default slider value to 0.7 (70%) for piano, otherwise 0.5 (50%)
-      let defaultVolume = (instrument === "Piano") ? 0.7 : 0.5;
+      const sliderItem = document.createElement('div');
+      sliderItem.className = 'slider-item';
+      const sliderContainer = document.createElement('div');
+      sliderContainer.className = 'slider-container';
+      const label = document.createElement('div');
+      label.className = 'slider-label';
+      label.textContent = instrument;
+      sliderContainer.appendChild(label);
       
+      // Create slider with p5.js
       let slider = createSlider(0, 1, defaultVolume, 0.01);
-      slider.position(200, yOffset);
+      slider.elt.style.flex = '1';
       slider.input(() => setVolume(instrument));
+      sliderContainer.appendChild(slider.elt);
+      sliderItem.appendChild(sliderContainer);
+      slidersContent.appendChild(sliderItem);
       
       sliders[instrument] = slider;
-      yOffset += 30; // Move to the next position
+      labels[instrument] = label;
+    }
   }
   
 
-  // Button to hide sliders
-  hideSlidersButton = createButton('Hide Sliders');
-  hideSlidersButton.position(40, 25);
-  hideSlidersButton.mousePressed(() => {
-      hideMasterVolumeSlider();
-      hideInstrumentSliders();
-  });
+  // Setup button event listeners (buttons are in HTML)
+  setupButtonListeners();
   
-  // Button to show sliders
-  showSlidersButton = createButton('Show Sliders');
-  showSlidersButton.position(130, 25);
-  showSlidersButton.mousePressed(() => {
-      showMasterVolumeSlider();
-      showInstrumentSliders();
-  });
-
   // Hide all sliders by default
-  //hideMasterVolumeSlider();
-  //hideInstrumentSliders();
+  hideMasterVolumeSlider();
+  hideInstrumentSliders();
   /* Other Settings. */
   //frameRate(60);
 
@@ -417,6 +480,17 @@ function setup() {
   lastTime = millis();
   startingTime = millis();
 };
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  // Recalculate grid position to center it
+  const gridWidth = n_grid_X * unitX;
+  const gridHeight = n_grid_Y * unitY;
+  globalX = (windowWidth - gridWidth) / 2;
+  globalY = (windowHeight - gridHeight) / 2;
+  deriveAttributes();
+  deriveLookupTable();
+}
 
 function drawDebugInfo() {
   baseX = windowWidth/2;
@@ -484,23 +558,34 @@ function draw() {
   let rightGestureName = window.sharedData.rightGestureData.gestureName;
 
   
-  // check if the right hand is pointing up
-  if (rightGestureName === "Pointing_Up") {
-    target = detectInstrument(rightHandCursorX, rightHandCursorY);
+  // First, reset all selections
+  for (let i = 0; i < selectedUnits.length; i++) {
+    selectedUnits[i] = false;
+  }
+  
+  // check if either hand is pointing up
+  if (rightGestureName === "Pointing_Up" || leftGestureName === "Pointing_Up") {
+    // Use the pointing hand's cursor position to detect instrument
+    let pointingCursorX = (rightGestureName === "Pointing_Up") ? rightHandCursorX : leftHandCursorX;
+    let pointingCursorY = (rightGestureName === "Pointing_Up") ? rightHandCursorY : leftHandCursorY;
     
-    // 如果右手是指向上且位于一个声部上方，并且左手是张开手掌
-    if (target !== -1 && leftGestureName === "Open_Palm") {
+    target = detectInstrument(pointingCursorX, pointingCursorY);
+    
+    // 如果手指向上且位于一个声部上方，将声部变绿
+    if (target !== -1) {
+        if (DEBUG) console.log(`Selected instrument: ${texts[target]} at position (${pointingCursorX}, ${pointingCursorY})`);
+        selectedUnits[target] = true;
+    } else {
+        if (DEBUG) console.log(`No instrument detected at position (${pointingCursorX}, ${pointingCursorY})`);
+    }
+    
+    // 如果左手是张开手掌且右手指向上，可以调整音量
+    if (target !== -1 && rightGestureName === "Pointing_Up" && leftGestureName === "Open_Palm") {
         let volume = 1 - (leftHandCursorY / windowHeight); // 使用左手的y位置设置音量
         sliders[texts[target]].value(volume);
         setVolume(texts[target]);
-        
-        // 将声部的颜色设置为绿色
-        colors[target] = [0, 255, 0];
     }
-} else {
-    // 如果右手不是指向上，重置颜色
-    resetColors();
-}
+  }
 
 
   // check if the left hand is fist
@@ -585,6 +670,7 @@ function detectInstrument(x, y) {
 function resetColors() {
   for (let i = 0; i < colors.length; i++) {
     colors[i] = [(units[i][4] < 128) ? 255 : 0, (units[i][4] < 128) ? 255 : 0, (units[i][4] < 128) ? 255 : 0];
+    selectedUnits[i] = false; // Reset selection state
   }
 }
 
@@ -611,7 +697,7 @@ function setAmp(lowerVoice) {
 
 function keyPressed() {
   if (key === " ") {
-    console.log("pressed space");
+    if (DEBUG) console.log("pressed space");
     if (isPaused && firstTimePlaying){
       playAllSounds();
     }
@@ -624,7 +710,7 @@ function keyPressed() {
   }
 
   if (keyCode === ENTER) {
-    console.log("pressed enter")
+    if (DEBUG) console.log("pressed enter")
     playTime = 0;
     lastTime = millis();
     
@@ -639,13 +725,28 @@ function keyPressed() {
 function playAllSounds() {
   firstTimePlaying = false;
   // Ensure the AudioContext is resumed on user gesture
-  if (getAudioContext().state !== 'running') {
-    getAudioContext().resume();
-    return
+  const audioContext = getAudioContext();
+  if (audioContext.state !== 'running') {
+    audioContext.resume().then(() => {
+      // After AudioContext is resumed, play the sounds
+      if (allLoaded) {
+        let currentTime = audioContext.currentTime;
+        for (let instrument in sounds) {
+          if (sounds.hasOwnProperty(instrument)) {
+            sounds[instrument].playMode('restart');  // Ensure the sound restarts on play
+            sounds[instrument].play(currentTime + 0.1); // Play all sounds at the same time after 0.1 second
+          }
+        }
+        isPaused = false;
+      } else {
+        if (DEBUG) console.log("Sounds are not fully loaded yet");
+      }
+    });
+    return;
   }
   
   if (allLoaded) {
-    let currentTime = getAudioContext().currentTime;
+    let currentTime = audioContext.currentTime;
     for (let instrument in sounds) {
       if (sounds.hasOwnProperty(instrument)) {
         sounds[instrument].playMode('restart');  // Ensure the sound restarts on play
@@ -654,7 +755,7 @@ function playAllSounds() {
     }
     isPaused = false;
   } else {
-    console.log("Sounds are not fully loaded yet");
+    if (DEBUG) console.log("Sounds are not fully loaded yet");
   }
 }
 
@@ -680,7 +781,7 @@ function resumeAllSounds() {
     }
     isPaused = false;
   } else {
-    console.log("Sounds are not fully loaded yet or not paused");
+    if (DEBUG) console.log("Sounds are not fully loaded yet or not paused");
   }
 }
 
@@ -707,3 +808,43 @@ function setMasterVolume() {
 }
 
 /* Functions from player end */
+
+// Setup button event listeners
+function setupButtonListeners() {
+  let slidersVisible = false;
+  const showSlidersButton = document.getElementById('showSlidersButton');
+  const playPauseButton = document.getElementById('playPauseButton');
+  
+  // Show/Hide Sliders button
+  if (showSlidersButton) {
+    showSlidersButton.addEventListener('click', () => {
+      if (slidersVisible) {
+        hideMasterVolumeSlider();
+        hideInstrumentSliders();
+        showSlidersButton.innerText = 'Show Sliders';
+        slidersVisible = false;
+      } else {
+        showMasterVolumeSlider();
+        showInstrumentSliders();
+        showSlidersButton.innerText = 'Hide Sliders';
+        slidersVisible = true;
+      }
+    });
+  }
+  
+  // Play/Pause button
+  if (playPauseButton) {
+    playPauseButton.addEventListener('click', () => {
+      if (isPaused && firstTimePlaying) {
+        playAllSounds();
+        playPauseButton.innerText = 'Pause';
+      } else if (isPaused) {
+        resumeAllSounds();
+        playPauseButton.innerText = 'Pause';
+      } else {
+        pauseAllSounds();
+        playPauseButton.innerText = 'Play';
+      }
+    });
+  }
+}
