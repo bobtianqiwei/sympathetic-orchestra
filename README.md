@@ -1,56 +1,149 @@
-Hello friend! 
-This should get you all set up with the scaffolding for a website that runs on a local server using JavaScript(with Node.js and Express), HTML + CSS. 
+# Sympathetic Orchestra
 
-Here are some instructions for running this starter code. 
-We're going to be using a command-line interface.
-(I'm writing this from the perspective of a Mac user using Terminal (zsh). If you're a Windows user, you might use Powershell. If you use Visual Studio Code, you might find [this page](https://docs.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-beginners-tutorial)
- helpful.)
-### 1. [Clone this repo](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) to your computer.
-Once you've got it, [navigate to the directory](https://www.macworld.com/article/221277/command-line-navigating-files-folders-mac-terminal.html)
-(ex: ``$ cd starter-code``)
-### 2. [Make sure you have Node and npm installed.](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) 
+An interactive web-based orchestra controlled by hand gestures, developed by Bob Tianqi Wei, Shm Garanganao Almeda, Ethan Tam, Dor Abrahamson and Bjoern Hartmann at UC Berkeley, 2024.
 
-Check to see if you can run  ``$ node -v`` and ``$ npm -v`` (My versions are v16.15.0 for node and 8.10.0 for npm.)
-### 3. Install the Express module using npm. 
-ex: ``$ npm install express``
-### 4. Run the example app using Node:
-ex: ``$ node App.js``
+## Overview
 
-You should see the message ``Server is running on http://localhost:8000``
+Sympathetic Orchestra is a gesture-controlled music application that allows users to conduct a virtual orchestra using hand gestures detected through their webcam. The application uses MediaPipe for hand recognition and gesture detection, p5.js for visualization and audio playback, and Node.js/Express for the web server.
 
-If you instead see an error message like ``Error: Cannot find module 'express'`` -- see step 3. 
-### 5. View your website
-Open a web browser (e.g. Google Chrome) to this URL: ``http://localhost:8000/``
+## Features
 
-You should see a delicious and fabulously designed website! Nice!
-### 6. Make it your own!
-Here's the file directory of this repository. 
+- **Hand Gesture Recognition**: Control the orchestra using hand gestures detected via webcam
+- **Interactive Orchestra**: Multiple instruments that can be controlled individually
+- **Real-time Visualization**: Visual feedback synchronized with audio playback
+- **Camera Preview**: Optional camera preview to see your gestures
+- **Volume Controls**: Adjustable volume sliders for each instrument
 
-Edit the **HTML files** and the **CSS stylesheet** to make them your own! 
+## Prerequisites
 
-Edit **App.js** if you want to add new pages, change how pages route to one another, if you've renamed your HTML files, etc. 
+- Node.js (v16.15.0 or higher recommended)
+- npm (v8.10.0 or higher recommended)
+- A modern web browser with webcam support (Chrome, Firefox, Safari, Edge)
+- Webcam for gesture recognition
+
+## Installation
+
+1. **Clone this repository** to your computer:
+   ```bash
+   git clone <repository-url>
+   cd sympathetic-orchestra
+   ```
+
+2. **Check Node.js and npm installation**:
+   ```bash
+   node -v
+   npm -v
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+   This will install:
+   - `express` - Web server framework
+   - `body-parser` - Middleware for parsing request bodies
+
+## Running the Application
+
+1. **Start the server**:
+   ```bash
+   node App.js
+   ```
+
+   You should see the message:
+   ```
+   Server is running on http://localhost:8000
+   ```
+
+2. **Open your web browser** and navigate to:
+   ```
+   http://localhost:8000/
+   ```
+
+3. **Enable the camera** by clicking the "Enable Camera" button to start gesture recognition.
+
+## Available Routes
+
+- **`http://localhost:8000/`** - Main Sympathetic Orchestra application
+- **`http://localhost:8000/player`** - Standalone player interface
+- **`http://localhost:8000/hands`** - Hand recognition test/demo page
+
+## Project Structure
+
 ```
-starter-code
+sympathetic-orchestra/
 │   README.md
-│   App.js    		// main JavaScript file
+│   App.js                    # Main Express server file
+│   package.json              # Node.js dependencies
 │
-└───public 		// this where all of our content is stored
-   │   index.html       // The initial view for our webpage
-   │   a.html 		
-   │   b.html 		// these are other pages our website links to
-   │   c.html
-   │
-   └───css
-   │  	│   styles.css    // our CSS stylesheet!
-   │   
-   └───images	         //images used by our website are stored here
-   	│   bunny.jpg 	
-   	└───...
+├── public/                   # Web content directory
+│   │   index.html            # Main application page
+│   │   mySketch.js           # p5.js sketch (visualization & audio)
+│   │   recognize_hands.js    # MediaPipe hand gesture recognition
+│   │   hands_test.html       # Hand recognition test page
+│   │
+│   ├── player/               # Standalone player interface
+│   │   ├── index.html
+│   │   ├── sketch.js
+│   │   └── soundfiles/       # Full-length audio files
+│   │
+│   ├── shorter_soundfiles/   # Shorter audio clips for main app
+│   │   └── [instrument].mp3
+│   │
+│   └── css/
+│       └── styles.css        # CSS stylesheet
+│
+└── app:shared:models/        # MediaPipe model files
+    ├── gesture_recognizer.task
+    └── hand_landmarker.task
 ```
 
-Alternatively: Delete everything and start over if you want to learn how to set this up on your own, or in your own way. Here are the pages I referenced, from which you can learn everything you need to set up this code on your own:
+## Usage
 
-https://www.digitalocean.com/community/tutorials/how-to-create-a-web-server-in-node-js-with-the-http-module"
-https://expressjs.com/en/starter/hello-world.html
-https://codeforgeek.com/render-html-file-expressjs/
-https://stackoverflow.com/questions/32257736/app-use-express-serve-multiple-html
+1. **Enable Camera**: Click "Enable Camera" to start webcam access and gesture recognition
+2. **Camera Preview**: Toggle "Camera Preview" to show/hide the webcam feed
+3. **Show Sliders**: Click "Show Sliders" to access volume controls for each instrument
+4. **Play/Pause**: Use the "Play" button to start or pause the orchestra
+5. **Gesture Control**: Use hand gestures to control the orchestra (see gesture recognition documentation)
+
+## Technologies Used
+
+- **Node.js** - Server runtime
+- **Express** - Web server framework
+- **p5.js** - Creative coding library for visualization and audio
+- **MediaPipe** - Hand gesture recognition and tracking
+- **HTML5/CSS3** - Frontend structure and styling
+
+## Troubleshooting
+
+- **Error: Cannot find module 'express'** - Run `npm install` to install dependencies
+- **Camera not working** - Ensure you've granted camera permissions in your browser
+- **Audio not playing** - Check browser audio permissions and ensure sound files are loaded
+- **Server port already in use** - Change the port in `App.js` (line 25) if port 8000 is occupied
+
+## Development
+
+To modify the application:
+
+- **HTML/CSS**: Edit files in the `public/` directory
+- **Server routes**: Modify `App.js` to add new routes or change server behavior
+- **Visualization**: Edit `public/mySketch.js` for p5.js canvas and audio logic
+- **Gesture recognition**: Edit `public/recognize_hands.js` for hand tracking behavior
+
+## License
+
+ISC
+
+## Credits
+
+- **Developers**: Bob Tianqi Wei, Shm Garanganao Almeda, Ethan Tam, Dor Abrahamson, Bjoern Hartmann
+- **Institution**: UC Berkeley, 2024
+- **Original Processing Version**: `Original_Sympathetic_Orchestra.pde`
+
+## References
+
+- [Express.js Documentation](https://expressjs.com/)
+- [p5.js Documentation](https://p5js.org/)
+- [MediaPipe Documentation](https://developers.google.com/mediapipe)
+- [Node.js Documentation](https://nodejs.org/)
