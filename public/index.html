@@ -165,6 +165,16 @@
     #slidersCard input[type="range"]:focus {
       outline: none;
     }
+    #gestureInfoContainer {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      z-index: 1000;
+      font-family: 'Manrope', sans-serif;
+      font-size: 12px;
+      color: #333;
+      white-space: nowrap;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"
     crossorigin="anonymous"></script>
@@ -204,8 +214,70 @@
     <div id="slidersContent"></div>
   </div>
   
+  <!-- Gesture Info Container (Bottom Right) -->
+  <div id="gestureInfoContainer">
+    <span id="gestureDisplayText">No hand detected</span>
+  </div>
+  
   <!-- computer vision code: -->
   <script type="module" src="recognize_hands.js"></script>
+  
+  <!-- Update gesture display -->
+  <script>
+    function formatGestureName(gestureName) {
+      if (!gestureName || gestureName === '') {
+        return null;
+      }
+      
+      // Map gesture names to display names
+      const gestureMap = {
+        'Open_Palm': 'expression',
+        'Pointing_Up': 'select',
+        'None': 'play',
+        'Closed_Fist': 'mute'
+      };
+      
+      return gestureMap[gestureName] || gestureName;
+    }
+    
+    function updateGestureDisplay() {
+      const displayElement = document.getElementById('gestureDisplayText');
+      if (!displayElement) return;
+      
+      if (window.sharedData && window.sharedData.leftGestureData && window.sharedData.rightGestureData) {
+        const leftGesture = formatGestureName(window.sharedData.leftGestureData.gestureName);
+        const rightGesture = formatGestureName(window.sharedData.rightGestureData.gestureName);
+        
+        if (!leftGesture && !rightGesture) {
+          displayElement.textContent = 'No hand detected';
+        } else {
+          const leftText = leftGesture ? `Left: ${leftGesture}` : '';
+          const rightText = rightGesture ? `Right: ${rightGesture}` : '';
+          
+          if (leftText && rightText) {
+            displayElement.textContent = `${leftText} | ${rightText}`;
+          } else if (leftText) {
+            displayElement.textContent = leftText;
+          } else if (rightText) {
+            displayElement.textContent = rightText;
+          } else {
+            displayElement.textContent = 'No hand detected';
+          }
+        }
+      } else {
+        displayElement.textContent = 'No hand detected';
+      }
+      requestAnimationFrame(updateGestureDisplay);
+    }
+    
+    // Start updating when page loads
+    window.addEventListener('load', () => {
+      // Wait a bit for sharedData to be initialized
+      setTimeout(() => {
+        updateGestureDisplay();
+      }, 100);
+    });
+  </script>
   
 </body>
 

@@ -259,7 +259,22 @@ function drawParts() {
     textSize(15);
     textFont('Manrope');
     textStyle(NORMAL);
-    text(texts[i], textAttributes[i][0], textAttributes[i][1]);
+    
+    // Draw text with white stroke outline (stroke behind text)
+    push();
+    drawingContext.textAlign = 'center';
+    drawingContext.textBaseline = 'middle';
+    drawingContext.font = 'normal 15px Manrope';
+    // Draw stroke first (behind) - skip for Conductor
+    if (texts[i] !== 'Conductor') {
+      drawingContext.strokeStyle = 'rgb(255, 255, 255)';
+      drawingContext.lineWidth = 2;
+      drawingContext.strokeText(texts[i], textAttributes[i][0], textAttributes[i][1]);
+    }
+    // Draw fill text on top (in front)
+    drawingContext.fillStyle = `rgb(${c}, ${c}, ${c})`;
+    drawingContext.fillText(texts[i], textAttributes[i][0], textAttributes[i][1]);
+    pop();
   }
 };
 
